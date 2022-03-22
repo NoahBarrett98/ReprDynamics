@@ -14,7 +14,7 @@ import os
 
 
 num_epochs = 100
-batch_size = 8
+batch_size = 32
 save_dir = "/home/noah/unntf/ReprDynamics/save_dir"
 
 
@@ -56,7 +56,7 @@ testset.save(save_dir)
 # model intialization
 net = Net().cuda()
 criterion = nn.CrossEntropyLoss().cuda()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9).cuda()
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 # INIT UNNTF
 unntf = UNNTF(

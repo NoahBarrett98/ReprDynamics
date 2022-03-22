@@ -1,0 +1,44 @@
+.main {
+    width: 100vw;
+    height: 100vh;
+    background-color: aqua;
+}
+
+.heatmap {
+    width: 45vw;
+    height: 45vw;
+    background-color: red;
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+    float:left;
+    /* overflow: visible; */
+}
+
+.local_view {
+    width: 45vw;
+    height: 60vh;
+    /* padding-top: 2.5vw;
+    padding-left: 2.5vw;
+    padding-right: 2.5vw; */
+    background-color: rgb(0, 60, 255);
+    float:right;
+}
+
+.img_grid {
+    width: 45vw;
+    height: 30vh;
+    /* padding-top: 2.5vw;
+    padding-left: 2.5vw;
+    padding-right: 2.5vw; */
+    background-color: rgb(217, 255, 0);
+    float:right;
+    overflow: auto;
+}
+
+.img_grid > img {
+    width: 100px;
+    height: 100px;
+}
+
