@@ -29,6 +29,7 @@ setup(
         "torchvision",
         'tqdm==4.50.2',
         'recordclass',
+        'flask'
       ],
 
     entry_points={

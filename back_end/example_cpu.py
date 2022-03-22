@@ -16,7 +16,7 @@ import os
 num_epochs = 20
 num_snapshots = 20
 batch_size = 8
-save_dir = "/home/noah/unntf/ReprDynamics/save_dir"
+save_dir = "save_dir"
 
 
 ## DL EXAMPLE ##
