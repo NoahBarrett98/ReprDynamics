@@ -66,3 +66,4 @@ Unlike using clustering techniques, the use of a KNN alleviates the concern of h
 3. Visualize - given the stored representations, compute the metrics and visualize matrixs
 
 
+
