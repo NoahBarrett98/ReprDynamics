@@ -1,8 +1,10 @@
 import torch
 import os
 import numpy as np
+import torch.utils.data as td
+import torchvision
 
-class UNNTFDataset(torch.utils.data.Dataset):
+class UNNTFDataset(td.Dataset):
     def __init__(self, data, labels=None, transform=None):
         
         self.data = data
