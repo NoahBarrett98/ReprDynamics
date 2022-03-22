@@ -12,15 +12,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-net = Net()
+
+num_epochs = 20
+num_snapshots = 20
+batch_size = 8
+save_dir = "/home/noah/unntf/ReprDynamics/save_dir"
+
+
 ## DL EXAMPLE ##
 transform = transforms.Compose(
-    [   
+    [
         transforms.ToPILImage(),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-batch_size = 8
+
 # trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
 #                                         download=True, transform=transform)
 # train_x = trainset.data
@@ -31,34 +37,33 @@ batch_size = 8
 
 testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True, transform=transform)
-test_x = testset.data
-test_y = testset.targets
+test_x = testset.data[:16]
+test_y = testset.targets[:16]
 testset = UNNTFDataset(test_x, test_y, transform=transform)
-# save dataset for inspection later #
 
 
-testloader = torch.utils.data.DataLoader(testset, 
+
+testloader = torch.utils.data.DataLoader(testset,
                                             batch_size=batch_size,
                                          shuffle=False)
 
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
-
-
-num_epochs = 100
+# save dataset for inspection later #
 data_size = len(testset)
-save_dir = r"C:\Users\NoahB\Desktop\School\first_year_MCSC_(2021-2022)\CS6406\project\code\ReprDynamics\save_dir"
 testset.save(save_dir)
+
+# model intialization
+net = Net() 
+criterion = nn.CrossEntropyLoss() 
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 # INIT UNNTF
 unntf = UNNTF(
               data_size=data_size,
               num_epochs=num_epochs,
-              num_snapshots=50,
+              num_snapshots=num_snapshots,
               save_path=save_dir
               )
 accuracy = []
@@ -66,7 +71,7 @@ loss = []
 for epoch in range(num_epochs):  # loop over the dataset multiple times
     running_loss = 0.0
     for i, data in enumerate(testloader):
-        inputs, labels = data["X"], data["y"]
+        inputs, labels = data["X"], data["y"] 
         ids = data["index"]
         # zero the parameter gradients
         optimizer.zero_grad()
@@ -81,9 +86,9 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
 
 print('Finished Training')
 
-neighbours = unntf.compute_neighbours(max_neighbours=15, 
-                            knn_algo="ball_tree", 
-                            save_path=r"C:\Users\NoahB\Desktop\School\first year MCSC (2021-2022)\CS6406\project\code\ReprDynamics\save_dir\neighbours.json")
+neighbours = unntf.compute_neighbours(max_neighbours=15,
+                            knn_algo="ball_tree",
+                            save_path=os.path.join(save_dir, "neighbours.json"))
 
 
 
