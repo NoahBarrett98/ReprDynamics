@@ -47,8 +47,8 @@ testloader = torch.utils.data.DataLoader(testset,
                                             batch_size=batch_size,
                                          shuffle=False)
 
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+# classes = ('plane', 'car', 'bird', 'cat',
+#            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 # save dataset for inspection later #
 data_size = len(testset)
@@ -89,6 +89,17 @@ print('Finished Training')
 neighbours = unntf.compute_neighbours(max_neighbours=15,
                             knn_algo="ball_tree",
                             save_path=os.path.join(save_dir, "neighbours.json"))
+
+mat = unntf.distance_matrix(neighbours=os.path.join(save_dir, "neighbours.json"), 
+                    sample_ids=[1,2,3,4,5,6,7,8],
+                    num_neighbours=10,
+                    distance_metric="euclidean")
+
+neigh = unntf.get_neighbours(neighbours=os.path.join(save_dir, "neighbours.json"), 
+                    sample_ids=[1,2,3,4,5,6,7,8],
+                    num_neighbours=10)
+
+import pdb;pdb.set_trace()
 
 
 

@@ -130,58 +130,75 @@ class UNNTF(object):
                         neighbours, 
                         sample_ids,
                         num_neighbours,
-                        distance_metric="euclidean"):
+                        distance_metric="euclidean",
+                        col_row_format=True):
+        
         if isinstance(neighbours, str):
             with open(neighbours, "r") as f:
                 neighbours = json.load(f)
         if num_neighbours > len(neighbours["neighbours"][0]["0"]["neighbours"]) -1:
             raise Exception(f"num neighbours ({num_neighbours}) > saved neighbours ({len(neighbours[0]['0']['neighbours'])})")
         
+        # read neighbours
         neighbour_ids = []
         for neighbour_i in neighbours["neighbours"]:
             neighbour_ids.append([neighbour_i[str(id)]["neighbours"][:num_neighbours] for id in sample_ids])
-
-        transitions = np.empty((len(sample_ids) - 1, len(neighbour_ids[0]), 1))
-        for i in range(len(neighbours) - 1):
+        # transition matrices
+        transitions = np.empty((len(neighbours["neighbours"]) - 1, len(neighbour_ids[0]), 1))
+        for i in range(len(neighbours["neighbours"]) - 1):
             transitions[i] = self.hamming_distance(neighbour_ids[i], neighbour_ids[i + 1])
         # distance matrix
         distance_metric = self.get_distance_metric(distance_metric)
-        distance = np.empty((len(neighbours) - 1,len(neighbours) - 1))
-        for i in range(len(neighbours) - 1):
-            for j in range(len(neighbours) - 1):
-                distance[i, j] = distance_metric(transitions[i], transitions[j])
+        # api col row format
+        if col_row_format:
+            distance = []
+            neighbours_ordered = neighbours["neighbours"]
+            neighbours_ordered.reverse()
+            for i in range(len(neighbours_ordered) - 1):
+                for j in range(len(neighbours_ordered) - 1):
+                    distance.append({"row":i, 
+                                        "col":j, 
+                                        "distance":distance_metric(transitions[i], transitions[j])})
+            distance.reverse()
+        # array, matplotlib/plotly friendly
+        else:
+            distance = np.empty((len(neighbours["neighbours"]) - 1,len(neighbours["neighbours"]) - 1))
+            for i in range(len(neighbours["neighbours"]) - 1):
+                for j in range(len(neighbours["neighbours"]) - 1):
+                    distance[i, j] = distance_metric(transitions[i], transitions[j])
 
         return distance
 
-    def global_distance_matrix(self,
-                               subset_size=1.0,
-                               num_neighbours=5,
-                               distance_metric="euclidean"
-                               ):
 
-        # convert snaps to tensor
-        # reduce size of snapshots
-        subset = random.sample(range(self.data_size), int(self.data_size*subset_size))
-        sampled_snaps = [x[subset, :] for x in self.snapshots]
-        # compute distance
-        distance = self.distance_matrix(
-                                        sampled_snaps,
-                                        num_neighbours,
-                                        distance_metric)
-        return distance
+    def get_neighbours(self, neighbours, 
+                                sample_ids
+                                ):
 
-    def local_distance_matrix(self,
-                               sample_set,
-                               num_neighbours=5,
-                               distance_metric="euclidean"
-                               ):
-        # get subset
-        sampled_snaps = [x[sample_set, :] for x in self.snapshots]
-        # compute distance
-        distance = self.distance_matrix(sampled_snaps,
-                                        num_neighbours,
-                                        distance_metric)
-        return distance
+        if isinstance(neighbours, str):
+            with open(neighbours, "r") as f:
+                neighbours = json.load(f)
+
+        if len(neighbours["neighbours"][0]["0"]["neighbours"]) < 2:
+            raise Exception("Insufficient number of neighbours computed")
+        if len(neighbours["neighbours"][0]["0"]["neighbours"]) < 5:
+            max_sample = len(neighbours["neighbours"][0]["0"]["neighbours"])
+        else:
+            max_sample = 5
+        
+        sampled_neighbours = []
+        for timestep in neighbours["neighbours"]:
+            neighbours_i = []
+            for id in sample_ids:
+                n_i = []
+                for n, d in zip(timestep[str(id)]["neighbours"], timestep[str(id)]["distances"]):
+                    if len(n_i) == max_sample:
+                        break
+                    if n in sample_ids:
+                        n_i.append([n, d])
+                # for now discount self for visualizations
+                neighbours_i.append(n_i[1:])
+            sampled_neighbours.append(neighbours_i)
+        return sampled_neighbours
 
     def _save_snapshots(self):
         with open(self.save_path+".json" if ".json" not in self.save_path else self.save_path, "w") as f:

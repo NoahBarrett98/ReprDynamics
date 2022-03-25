@@ -58,11 +58,14 @@ def array_post():
                     sample_ids=samples,
                     num_neighbours=10,
                     distance_metric="euclidean")
-            app.config["cur_mat"] = mat.tolist()
+            app.config["cur_mat"] = mat
+            app.config["cur_neighbours"] = app.config["unntf"].get_neighbours(neighbours=os.path.join(app.config["save_dir"], "neighbours.json"),
+                                                                                sample_ids=samples)
         return 'Sucesss', 200
     
     if request.method == 'GET':
-        message = {'mat':app.config["cur_mat"]}
+        message = {'mat':app.config["cur_mat"],
+                    'neighbours':app.config["cur_neighbours"]}
         return jsonify(message)
     
 
