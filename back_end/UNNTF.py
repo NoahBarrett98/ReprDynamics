@@ -1,12 +1,18 @@
+from collections import defaultdict
+from timeit import default_timer
 import numpy as np
 import random
 import torch
 import os
 import json
+import time
+import numba
 
 from sklearn.neighbors import KNeighborsClassifier
 from scipy.spatial import distance
+from scipy.stats import entropy
 from sklearn import metrics
+from numba import jit
 
 class UNNTF(object):
     def __init__(self, data_size=None,
@@ -63,11 +69,15 @@ class UNNTF(object):
 
     
     def hamming_distance(self, a, b):
-        a_i = np.zeros((self.data_size, self.data_size))
-        b_i = np.zeros((self.data_size, self.data_size))
-        for i, (a_h, b_h) in enumerate(zip(a, b)):
-            a_i[i, a_h] = 1
-            b_i[i, b_h] = 1
+        # @numba.njit
+        def ohe(a, b, data_size):
+            a_i = np.zeros((data_size, data_size))
+            b_i = np.zeros((data_size, data_size))
+            for i, (a_h, b_h) in enumerate(zip(a, b)):
+                a_i[i, a_h] = 1
+                b_i[i, b_h] = 1
+            return a_i, b_i
+        a_i, b_i = ohe(a, b, self.data_size)
         return metrics.hamming_loss(a_i, b_i)
 
     @staticmethod
@@ -126,6 +136,7 @@ class UNNTF(object):
 
         return neighbours
 
+    
     def distance_matrix(self, 
                         neighbours, 
                         sample_ids,
@@ -145,27 +156,37 @@ class UNNTF(object):
             neighbour_ids.append([neighbour_i[str(id)]["neighbours"][:num_neighbours] for id in sample_ids])
         # transition matrices
         transitions = np.empty((len(neighbours["neighbours"]) - 1, len(neighbour_ids[0]), 1))
+        time1 = time.time()
         for i in range(len(neighbours["neighbours"]) - 1):
             transitions[i] = self.hamming_distance(neighbour_ids[i], neighbour_ids[i + 1])
+
+        print("transition time: ", time.time()-time1)
         # distance matrix
         distance_metric = self.get_distance_metric(distance_metric)
         # api col row format
+        def compute_distance(transitions, distance_metric, length):
+            d = np.empty((length - 1, length - 1))
+            for i in range(length - 1):
+                for j in range(length - 1):
+                    d[i, j] = distance_metric(transitions[i], transitions[j])
+            return d
+
         if col_row_format:
             distance = []
             neighbours_ordered = neighbours["neighbours"]
             neighbours_ordered.reverse()
+            
+            d = compute_distance(transitions, distance_metric, len(neighbours_ordered))
+
             for i in range(len(neighbours_ordered) - 1):
                 for j in range(len(neighbours_ordered) - 1):
                     distance.append({"row":i, 
                                         "col":j, 
-                                        "distance":distance_metric(transitions[i], transitions[j])})
+                                        "distance":d[i, j]})
             distance.reverse()
         # array, matplotlib/plotly friendly
         else:
-            distance = np.empty((len(neighbours["neighbours"]) - 1,len(neighbours["neighbours"]) - 1))
-            for i in range(len(neighbours["neighbours"]) - 1):
-                for j in range(len(neighbours["neighbours"]) - 1):
-                    distance[i, j] = distance_metric(transitions[i], transitions[j])
+            distance = compute_distance(transitions, distance_metric, len(neighbours["neighbours"]))
 
         return distance
 
@@ -178,25 +199,29 @@ class UNNTF(object):
             with open(neighbours, "r") as f:
                 neighbours = json.load(f)
 
-        if len(neighbours["neighbours"][0]["0"]["neighbours"]) < 2:
-            raise Exception("Insufficient number of neighbours computed")
-        if len(neighbours["neighbours"][0]["0"]["neighbours"]) < 5:
-            max_sample = len(neighbours["neighbours"][0]["0"]["neighbours"])
-        else:
-            max_sample = 5
+        # if len(neighbours["neighbours"][0]["0"]["neighbours"]) < 2:
+        #     raise Exception("Insufficient number of neighbours computed")
+        # if len(neighbours["neighbours"][0]["0"]["neighbours"]) < 5:
+        #     max_sample = len(neighbours["neighbours"][0]["0"]["neighbours"])
+        # else:
+        #     max_sample = 5
         
+        softmax = torch.nn.Softmax(dim=0)
         sampled_neighbours = []
         for timestep in neighbours["neighbours"]:
-            neighbours_i = []
+            neighbours_i = defaultdict(dict)
             for id in sample_ids:
                 n_i = []
                 for n, d in zip(timestep[str(id)]["neighbours"], timestep[str(id)]["distances"]):
-                    if len(n_i) == max_sample:
-                        break
-                    if n in sample_ids:
-                        n_i.append([n, d])
+                    # if len(n_i) == max_sample:
+                    #     break
+                    if str(n) in sample_ids:
+                        n_i.append([n, float(d)])
                 # for now discount self for visualizations
-                neighbours_i.append(n_i[1:])
+                neighbours_i[str(id)]["neighbours"] = n_i[1:]
+                representation = [float(x) for x in timestep[str(id)]["representation"]]
+                representation = softmax(torch.tensor(representation)).cpu().detach().numpy()
+                neighbours_i[str(id)]["confidence"] = float(entropy(representation))
             sampled_neighbours.append(neighbours_i)
         return sampled_neighbours
 

@@ -8,10 +8,11 @@ import click
 import numpy as np
 from PIL import Image
 import glob
+import time
 
 app = Flask(__name__)
 
-MAX_IMGS = 100
+MAX_IMGS = 1000
 
 def OnExitApp(temp_dir):
     temp_dir.cleanup()
@@ -45,8 +46,8 @@ def init(save_dir):
     
 @app.route("/", methods=['GET', 'POST'])
 def index():
-    samples = [f for f in glob.glob(os.path.join(app.config['img_dir'], "*"))]
-    ids = [os.path.basename(f).split(".")[0] for f in samples]
+    samples = [f for f in glob.glob(os.path.join(app.config['img_dir'], "*"))][:MAX_IMGS]
+    ids = [os.path.basename(f).split(".")[0] for f in samples][:MAX_IMGS]
     return render_template('index.html', len=len(ids), ids = ids, samples = samples, max_imgs=MAX_IMGS)
 
 @app.route("/array_post",methods=['GET','POST'])
@@ -54,10 +55,12 @@ def array_post():
     if request.method=='POST':
         samples = request.form.getlist("selected[]")
         if len(samples):
+            i = time.time()
             mat = app.config["unntf"].distance_matrix(neighbours=os.path.join(app.config["save_dir"], "neighbours.json"), 
                     sample_ids=samples,
                     num_neighbours=10,
                     distance_metric="euclidean")
+            print("time: ", time.time()-i)
             app.config["cur_mat"] = mat
             app.config["cur_neighbours"] = app.config["unntf"].get_neighbours(neighbours=os.path.join(app.config["save_dir"], "neighbours.json"),
                                                                                 sample_ids=samples)

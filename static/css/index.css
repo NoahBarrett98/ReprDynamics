@@ -9,54 +9,63 @@
     width: 49vw;
     height: 49vw;
     /* background-color: red; */
-    padding-top: 0;
+    /* padding-top: 0;
     padding-left: 0;
     padding-right: 0;
-    padding-bottom: 0;
+    padding-bottom: 0; */
     float:left;
     /* overflow: visible; */
 }
 
 .local_view {
     width: 50%;
-    height: 65%;
-    /* padding-top: 2.5vw;
-    padding-left: 2.5vw;
-    padding-right: 2.5vw; */
-    background-color: rgb(0, 60, 255);
-    float:right;
-}
-
-.local_snap {
-    width:50%;
-    height:100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/*main img */
-.local_img1 {
-    /* position: absolute; */
-    /* margin-left: auto;
-    margin-right: auto;
-    margin-top: auto;
-    margin-bottom: auto;
-    display: block; */
-    width: 100px;
-    height: 100px;
-}
-
-
-.img_grid {
-    width: 50%;
     height: 35%;
     /* padding-top: 2.5vw;
     padding-left: 2.5vw;
     padding-right: 2.5vw; */
-    background-color: rgb(217, 255, 0);
+    /* position: absolute; */
+    float:right; 
+    /* left: 50vw; */
+    /* border-width:5px;
+    border-style:solid;
+    border-color:black;
+    border-radius: 25px;
+    margin-bottom: 2.5vh; */
+}
+
+/* .local_snap {
+    width:50%;
+    height:100%;
+    position: relative;
+} */
+
+/* .local_snap > img {
+    width: 100px;
+    height: 100px;
+}
+
+/*main img */
+/* .local_img {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+/* } */
+/* .neighbour_img {
+    width: 50px;
+    height: 50px;
+}  */
+
+
+.img_grid {
+    width: 50%;
+    height: 50%;
+    /* border-width:5px;
+    border-style:solid; */
+    /* border-color:black;
+    border-radius: 25px; */
     float:right;
-    overflow: auto;
+    /* overflow: auto;
+    transition: transform 0.25s; */
 }
 
 .img_grid > img {
