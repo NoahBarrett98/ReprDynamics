@@ -1,7 +1,5 @@
-from UNNTF import UNNTF
-from models import Net
-from dataset import UNNTFDataset
-
+from ReprD import ReprD
+from dataset import ReprDataset
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -15,7 +13,27 @@ import os
 
 num_epochs = 100
 batch_size = 32
-save_dir = "/home/noah/unntf/ReprDynamics/save_dir"
+save_dir = "save_dir"
+
+# sample pytorch model
+class Net(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1) # flatten all dimensions except batch
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
 ## DL EXAMPLE ##
@@ -26,19 +44,11 @@ transform = transforms.Compose(
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-# trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-#                                         download=True, transform=transform)
-# train_x = trainset.data
-# train_y = trainset.targets
-# trainset = UNNTFDataset(train_x, train_y, transform)
-# trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-#                                           shuffle=True)
-
 testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True, transform=transform)
 test_x = testset.data
 test_y = testset.targets
-testset = UNNTFDataset(test_x, test_y, transform=transform)
+testset = ReprDataset(test_x, test_y, transform=transform)
 
 
 
@@ -46,8 +56,7 @@ testloader = torch.utils.data.DataLoader(testset,
                                             batch_size=batch_size,
                                          shuffle=False)
 
-classes = ('plane', 'car', 'bird', 'cat',
-           'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
 
 # save dataset for inspection later #
 data_size = len(testset)
@@ -58,8 +67,8 @@ net = Net().cuda()
 criterion = nn.CrossEntropyLoss().cuda()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
-# INIT UNNTF
-unntf = UNNTF(
+# INIT ReprD
+reprd = ReprD(
               data_size=data_size,
               num_epochs=num_epochs,
               num_snapshots=50,
@@ -76,8 +85,8 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
         optimizer.zero_grad()
         # forward + backward + optimize
         outputs = net(inputs)
-        if not epoch % unntf.step_size:
-            unntf.store_batch(representation=outputs, ids=ids, epoch=epoch)
+        if not epoch % reprd.step_size:
+            reprd.store_batch(representation=outputs, ids=ids, epoch=epoch)
 
         loss = criterion(outputs, labels)
         loss.backward()
@@ -85,11 +94,18 @@ for epoch in range(num_epochs):  # loop over the dataset multiple times
 
 print('Finished Training')
 
-neighbours = unntf.compute_neighbours(max_neighbours=15,
+# compute neighbours for entire dataset #
+neighbours = reprd.compute_neighbours(max_neighbours=15,
                             knn_algo="ball_tree",
-                            save_path=os.path.join(save_dir, "neighbours.json"))
-
-
-
-
+                            save_path=os.path.join(save_dir, "neighbours.json")
+                            )
+# compute distance matrix for sample #
+mat = reprd.distance_matrix(neighbours=os.path.join(save_dir, "neighbours.json"), 
+                    sample_ids=[1,2,3,4,5,6,7,8],
+                    num_neighbours=10,
+                    distance_metric="euclidean")
+# compute neighbours for sample #
+neigh = reprd.get_neighbours(neighbours=os.path.join(save_dir, "neighbours.json"), 
+                    sample_ids=[1,2,3,4,5,6,7,8],
+                    num_neighbours=10)
 

@@ -1,69 +1,32 @@
 # ReprDynamics
 
-# NNTF Extension to Unsupervised domain
+![alt text](img/dashboard.png)
 
-The aim of this project will be to extend the concepts behind the NNTF to the unsupervised domain. In order to this some modifications to the approach will be made.
+This is a tool for visualizing the training dynamics of a neural network. It is inspired by the Neural Network Training Print https://link.springer.com/article/10.1007/s12650-021-00809-4
 
-## Approach 1, KNN classifier approach
+## Installing ReprDynamics
+
+To install ReprDynamics you must clone this repo and install all dependencies.
 
 ```
-K <- number of snapshots
-N <- number of neighbours
-KNN <- KNN algo 
-J <- size of subset to track
-Epochs <-number of training epochs
-Optimizer <- optimizer for SGD
-Data <- dataset for problem
-Loss <- loss function for optimizer
-f(x) <- neural network
-z <- |representation_vector|
---------------------------------------------
-
-step := epochs/k
-snapshots := array[k, J, z]
-// train and collect representations
-for I in range(epochs):
-	snapshot = array[len(data), z]
-	for x in data:
-		x_hat = f(x)
-		loss = loss(x, x_hat)
-		backprop(optimizer(loss))
-		if (i%step):
-			z = f(x).representation_layer // must specify which layer to visualize
-			snapshot.append(z)
-
-subset := sample(range(data), J)
-snapshot = snapshot[:, subset, :] //get snapshots of interest for each iteration
-neighbors = array[K, J]
-for I, s in enumerate(snapshot):
-	KNN = knn_algo(s) // build knn for snapshot, returns N neighbors
-    for j, x in enumerate(subset):
-        neighbors[I, j] = knn_algo(x)
-	
-// compute neighbors
-distance := array[K,K]
-For i in range(K):
-	For j in range(K):
-		Distance(neighbours[i], neighbours[j])
+git clone https://github.com/NoahBarrett98/ReprDynamics
+cd ./path/to/ReprDynamics
+conda create --name ReprDynamics python=3.9
+pip install -e .
+conda activate ReprDynamics
 ```
 
-This approach will measure the relative transitions between datapoints within the latent space. For each time step a KNN classifier will be used to quantify the changes in neighbours between a subset of data points. This takes inspiration from the use of KNN as a measure of goodness in learned representations in SSL. 
 
-### problems with approach
+## Run sample visualization
 
-A major problem with this approach is that the KNN classifer will be costly, and so we may have to limit the number of samples used when constructing the KNN and utilizing it for inference. 
+A sample training session is provided in ./sample. 16 images from cifar-10 were used to train a simple neural network. Once ReprDynamics is installed, you can visualize this training session (flask will host the visualization on port 5000 by default):
 
-### benefits of approach
-
-Unlike using clustering techniques, the use of a KNN alleviates the concern of hyper parameter bias in the calculation of similarity between the points. The choice of number of neighbours will only change the resolution of changes to a certain extent and then degrade when distant clusters are reperesented in the transitions. 
-
-### Plan for approach
-
-#### 3 main functions
-
-1. INIT - initialize the UNNTF
-2. Store - store representation snapshot during training
-3. Visualize - given the stored representations, compute the metrics and visualize matrixs
+```
+cd /path/to/ReprDynamics
+ReprDynamics --save_dir ./sample
+```
 
 
+## Using ReprDynamics to store training snapshots and computing transition heat maps
 
+This repo is tested using pytorch, however is easily extendable to Tensorflow and other deep learning frameworks by overriding the store_batch() function found in back_end/ReprD.py. There are four steps to incorporating ReprDynamics into a pre existing workflow. An example for both the CPU and GPU can be found in ./back_end. 

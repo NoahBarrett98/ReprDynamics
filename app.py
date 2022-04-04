@@ -1,18 +1,16 @@
-from back_end.UNNTF import UNNTF
-
+from back_end.ReprD import ReprD
 from flask import Flask, jsonify, request, render_template
-import atexit
-import tempfile
 import os
 import click
 import numpy as np
 from PIL import Image
 import glob
 import time
+import shutil
 
 app = Flask(__name__)
 
-MAX_IMGS = 1000
+MAX_IMGS = 5000
 
 def OnExitApp(temp_dir):
     temp_dir.cleanup()
@@ -20,26 +18,26 @@ def OnExitApp(temp_dir):
 def init(save_dir):
     if not os.path.isdir("static/temp"):
         os.mkdir("static/temp")
-    f = tempfile.TemporaryDirectory(dir = "static/temp")
-    atexit.register(OnExitApp, temp_dir=f)
-
+   
     # read np files and save into temp dir #
     images = np.load(os.path.join(save_dir, "data", "data.npy"))
-    if not os.path.isdir(os.path.join(f.name, "img")):
-        os.mkdir(os.path.join(f.name, "img"))
+    if os.path.isdir(os.path.join("static/temp", "img")):
+        shutil.rmtree(os.path.join("static/temp", "img"), ignore_errors=True)
+    os.mkdir(os.path.join("static/temp", "img"))
+
     for i, img in enumerate(images):
         im = Image.fromarray(img)
-        im.save(os.path.join(f.name, "img", f"{i}.png"))
-    app.config['temp_f'] = f
-    app.config['img_dir'] = os.path.join(f.name, "img")
+        im.save(os.path.join("static/temp", "img", f"{i}.png"))
+    app.config['temp_f'] = "static/temp"
+    app.config['img_dir'] = os.path.join("static/temp", "img")
 
-    # initalize UNNTF
-    # INIT UNNTF
-    unntf = UNNTF(
+    # initalize ReprD
+    # INIT ReprD
+    reprd = ReprD(
                 save_path=save_dir,
                 load_path=os.path.join(save_dir, "snapshots.json")
                 )
-    app.config['unntf'] = unntf
+    app.config['reprd'] = reprd
 
     app.config["cur_mat"] = -1
     
@@ -56,14 +54,22 @@ def array_post():
         samples = request.form.getlist("selected[]")
         if len(samples):
             i = time.time()
-            mat = app.config["unntf"].distance_matrix(neighbours=os.path.join(app.config["save_dir"], "neighbours.json"), 
-                    sample_ids=samples,
-                    num_neighbours=10,
-                    distance_metric="euclidean")
-            print("time: ", time.time()-i)
+            # compute neighbours #
+            neighbours = app.config["reprd"].compute_neighbours(max_neighbours=15,
+                                                                knn_algo="ball_tree",
+                                                                sample_ids=samples
+                                                                  )
+            # compute distance matrix #
+            mat = app.config["reprd"].distance_matrix(neighbours=neighbours, 
+                                                        sample_ids=samples,
+                                                        num_neighbours=4,
+                                                        distance_metric="euclidean")
+
+            
             app.config["cur_mat"] = mat
-            app.config["cur_neighbours"] = app.config["unntf"].get_neighbours(neighbours=os.path.join(app.config["save_dir"], "neighbours.json"),
+            app.config["cur_neighbours"] = app.config["reprd"].get_neighbours(neighbours=neighbours,
                                                                                 sample_ids=samples)
+
         return 'Sucesss', 200
     
     if request.method == 'GET':
@@ -77,7 +83,7 @@ def array_post():
 def run(save_dir):
     f = init(save_dir)
     app.config["save_dir"] = save_dir
-    app.run(debug=True) 
+    app.run(debug=False) 
 
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import torch.utils.data as td
 import torchvision
 
-class UNNTFDataset(td.Dataset):
+class ReprDataset(td.Dataset):
     def __init__(self, data, labels=None, transform=None):
         
         self.data = data
