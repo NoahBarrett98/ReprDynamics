@@ -4,3 +4,4 @@ ReprDynamics.egg-info/
 data/
 .idea/
 static/temp/
+!sample/data/
