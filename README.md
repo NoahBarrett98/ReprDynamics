@@ -14,7 +14,6 @@ cd ./path/to/ReprDynamics
 conda create --name ReprDynamics python=3.9
 conda activate ReprDynamics
 pip install -e .
-
 ```
 
 
