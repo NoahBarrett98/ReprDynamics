@@ -12,8 +12,9 @@ To install ReprDynamics you must clone this repo and install all dependencies.
 git clone https://github.com/NoahBarrett98/ReprDynamics
 cd ./path/to/ReprDynamics
 conda create --name ReprDynamics python=3.9
-pip install -e .
 conda activate ReprDynamics
+pip install -e .
+
 ```
 
 
