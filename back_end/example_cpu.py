@@ -107,8 +107,9 @@ print('Finished Training')
 
 # compute neighbours for entire dataset #
 neighbours = reprd.compute_neighbours(max_neighbours=15,
+                            sample_ids=[1,2,3,4,5,6,7,8],
                             knn_algo="ball_tree",
-                            # save_path=os.path.join(save_dir, "neighbours.json")
+                            save_path=os.path.join(save_dir, "neighbours.json")
                             )
 # compute distance matrix for sample #
 mat = reprd.distance_matrix(neighbours=os.path.join(save_dir, "neighbours.json"), 
